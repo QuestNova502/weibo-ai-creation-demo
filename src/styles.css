@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+:root {
+  --weibo-orange: #ff8200;
+  --qwen-primary: #6c5ce7;
+  --qwen-grad-start: #6366f1;
+  --qwen-grad-end: #8b5cf6;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  background: #f7f8fa;
+  color: #111827;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 999px;
+}
