@@ -12,21 +12,44 @@ import { useLocation } from 'wouter'
 import {
   ArrowLeft,
   ArrowRight,
+  Bell,
   Bot,
+  BookText,
+  Compass,
   Check,
   ChevronDown,
+  ChevronsUpDown,
   CircleUserRound,
   Clapperboard,
   Clock3,
   Copy,
+  Film,
+  Flame,
+  Hash,
+  Heart,
+  Home,
   Image,
+  ImagePlus,
+  Laugh,
+  Menu,
   MessageCircle,
+  MessageSquare,
+  MessageSquareDot,
+  PanelsTopLeft,
   Paperclip,
   Pencil,
   Plus,
+  Repeat2,
+  SearchCheck,
+  ShieldCheck,
   Search,
   Send,
   Sparkles,
+  TrendingUp,
+  Trophy,
+  UserPlus,
+  UserRound,
+  Vote,
   X
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -63,7 +86,7 @@ interface Conversation {
   selectedSkills: string[]
   extraParamValues: Record<string, string>
   meta?: {
-    writerStep?: 0 | 1 | 2
+    writerStep?: 0 | 1 | 2 | 3
   }
 }
 
@@ -77,6 +100,7 @@ interface AITask {
   createdAt: number
   conversationId: string
   loadingMessageId?: string
+  paramsSnapshot?: Record<string, string>
 }
 
 interface AgentConfig {
@@ -186,51 +210,164 @@ const promptTags = [
 ]
 
 const templatePresets = [
-  { emoji: '🔥', name: '热点评论', type: '写作', agent: 'writer' as AgentType, model: 'Qwen 3.0', skills: ['热点追踪'] },
-  { emoji: '🛍️', name: '产品种草', type: '写作', agent: 'writer' as AgentType, model: 'Qwen 3.0', skills: ['SEO优化'] },
-  { emoji: '☕', name: '日常分享', type: '写作', agent: 'writer' as AgentType, model: 'Qwen 3.0', skills: [] },
-  { emoji: '📘', name: '知识科普', type: '写作', agent: 'writer' as AgentType, model: 'DeepSeek R1', skills: ['SEO优化'] },
-  { emoji: '🖌️', name: '国风水墨', type: '图片', agent: 'gallery' as AgentType, model: 'SeeArt Pro', skills: [] },
-  { emoji: '📣', name: '海报设计', type: '图片', agent: 'gallery' as AgentType, model: 'Midjourney v7', skills: [] },
-  { emoji: '🌆', name: '风景延时', type: '视频', agent: 'studio' as AgentType, model: 'SeeDance 2.0', skills: [] },
-  { emoji: '🎬', name: '产品展示', type: '视频', agent: 'studio' as AgentType, model: 'Kling 2.0', skills: [] }
+  {
+    emoji: '🔥',
+    name: '热点评论',
+    type: '写作',
+    agent: 'writer' as AgentType,
+    model: 'Qwen 3.0',
+    skills: ['热点追踪'],
+    desc: '快速跟进热搜，生成观点型短评'
+  },
+  {
+    emoji: '🛍️',
+    name: '产品种草',
+    type: '写作',
+    agent: 'writer' as AgentType,
+    model: 'Qwen 3.0',
+    skills: ['SEO优化'],
+    desc: '突出卖点并优化转化表达'
+  },
+  {
+    emoji: '☕',
+    name: '日常分享',
+    type: '写作',
+    agent: 'writer' as AgentType,
+    model: 'Qwen 3.0',
+    skills: [],
+    desc: '生活场景轻量表达，一键成文'
+  },
+  {
+    emoji: '📘',
+    name: '知识科普',
+    type: '写作',
+    agent: 'writer' as AgentType,
+    model: 'DeepSeek R1',
+    skills: ['SEO优化'],
+    desc: '结构化讲解复杂概念'
+  },
+  {
+    emoji: '🖌️',
+    name: '国风水墨',
+    type: '图片',
+    agent: 'gallery' as AgentType,
+    model: 'SeeArt Pro',
+    skills: [],
+    desc: '水墨笔触与留白构图生成'
+  },
+  {
+    emoji: '📣',
+    name: '海报设计',
+    type: '图片',
+    agent: 'gallery' as AgentType,
+    model: 'Midjourney v7',
+    skills: [],
+    desc: '活动主视觉与宣传海报快速出图'
+  },
+  {
+    emoji: '🌆',
+    name: '风景延时',
+    type: '视频',
+    agent: 'studio' as AgentType,
+    model: 'SeeDance 2.0',
+    skills: [],
+    desc: '生成具备镜头变化的延时风格短片'
+  },
+  {
+    emoji: '🎬',
+    name: '产品展示',
+    type: '视频',
+    agent: 'studio' as AgentType,
+    model: 'Kling 2.0',
+    skills: [],
+    desc: '15秒卖点演示，适配信息流投放'
+  }
 ]
 
 const feedPosts = [
   {
+    id: 'post-1',
     name: '新浪科技',
-    time: '2小时前',
-    text: '微博 AI 创作空间进入内测，用户可在发布前直接与智能体协作完成图文视频创作。',
-    stat: '转发 182 · 评论 64 · 点赞 1.2k'
+    verified: '媒体认证',
+    time: '2分钟前',
+    source: '微博网页版',
+    text: '微博 AI 创作空间进入内测，用户可在发布前直接与智能体协作完成图文视频创作，创作链路从“想法”到“发布”一站式完成。',
+    images: ['https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=960&q=80'],
+    stat: { repost: 182, comment: 64, like: 1200 }
   },
   {
+    id: 'post-2',
     name: '产品观察员',
-    time: '4小时前',
-    text: '试用了“千问AI创作”，从写文案到生成配图一站式完成，效率提升明显。',
-    stat: '转发 98 · 评论 39 · 点赞 860'
+    verified: '微博优质创作者',
+    time: '15分钟前',
+    source: 'iPhone 17 Pro',
+    text: '试用了“千问AI创作”，从文案骨架、配图生成到发布前改写都在一个入口完成。产品决策点很清晰：减少跳出、缩短发布时间。',
+    images: [
+      'https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=560&q=80',
+      'https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=560&q=80',
+      'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=560&q=80',
+      'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=560&q=80'
+    ],
+    stat: { repost: 98, comment: 39, like: 860 }
   },
   {
+    id: 'post-3',
     name: '设计研究社',
-    time: '6小时前',
-    text: '把AI入口放进主发布器是很聪明的决策，真正让创作闭环发生在首页。',
-    stat: '转发 76 · 评论 25 · 点赞 531'
+    verified: '微博设计博主',
+    time: '1小时前',
+    source: '微博网页版',
+    text: '把 AI 入口放在主发布器，不是“新增一个工具”，而是把创作心智放在最短路径上。交互里最重要的是保持主站风格一致，避免割裂。',
+    stat: { repost: 76, comment: 25, like: 531 }
   },
   {
+    id: 'post-4',
     name: '前端群星',
-    time: '8小时前',
-    text: 'React + Motion 做这类复杂交互很顺手，关键是状态建模清晰。',
-    stat: '转发 43 · 评论 14 · 点赞 309'
+    verified: '互联网博主',
+    time: '3小时前',
+    source: '微博网页版',
+    text: 'React + Motion 做复杂交互确实顺手，但要先把“会话、任务、发布器”三套状态边界划清楚，否则后期功能越加越乱。',
+    stat: { repost: 43, comment: 14, like: 309 }
   },
   {
+    id: 'post-5',
     name: 'AI视频日报',
-    time: '昨天',
-    text: 'SeeDance 与 Kling 新版本都在迭代视频一致性，你更看好哪家？',
-    stat: '转发 133 · 评论 82 · 点赞 974'
+    verified: '微博原创视频博主',
+    time: '昨天 21:36',
+    source: '微博视频号',
+    text: 'SeeDance 与 Kling 新版本都在迭代视频一致性，你更看好哪家？评论区欢迎放真实生成样片。',
+    images: ['https://images.unsplash.com/photo-1536240478700-b869070f9279?auto=format&fit=crop&w=960&q=80'],
+    stat: { repost: 133, comment: 82, like: 974 }
+  },
+  {
+    id: 'post-6',
+    name: '知识创作周刊',
+    verified: '头条文章作者',
+    time: '昨天 18:22',
+    source: 'HUAWEI Mate X6',
+    text: '#AIGC工具实测# 做知识向账号，真正需要的是“稳定风格 + 快速改写 + 素材复用”三件套。AI创作空间在这点上已经有雏形。',
+    stat: { repost: 27, comment: 17, like: 216 }
   }
 ]
 
-const hotList = ['王菲 春晚', '总台声明', '公司利润2.7亿拿1.8亿发年终奖', 'AI视频工具对比', '王鑫被查', '交警查酒驾意外见家长', '中戏已有两位表演系主任主动投案', '微博创作者中心升级', 'Veo 3 实测', '短道速滑银牌']
-const recommends = ['说车的小宇', '地摊周报巫医饭', '秋晨同学', '设计灵感Bot']
+const hotList = [
+  { title: '王鑫被查', heat: '10:57登顶', hot: true },
+  { title: '曝谢霆锋张柏芝结婚与王菲有关', heat: '885924', hot: true },
+  { title: '王菲 春晚', heat: '692075', hot: true },
+  { title: '中戏已有两位表演系主任主动投案', heat: '556347', hot: true },
+  { title: 'Deepseek被指变冷淡了', heat: '凌晨霸榜', hot: false },
+  { title: '湛江一海滩发现疑似儒艮尸体', heat: '353572', hot: false },
+  { title: '刘大锤聊赵丽颖恋情近况', heat: '09:39登顶', hot: true },
+  { title: '方家翊整容', heat: '381219', hot: false },
+  { title: '蒙古感谢中方', heat: '81751', hot: false },
+  { title: '无锡威玛犬', heat: '48226', hot: false }
+]
+
+const recommends = [
+  { name: 'chun-明', desc: '体育博主 头条文章作者' },
+  { name: '丁旭1984', desc: '微博原创视频博主' },
+  { name: '兵峰', desc: '天津市津南区兵峰摄影工作室 摄影师' },
+  { name: '设计灵感Bot', desc: '设计领域精选内容聚合' }
+]
 
 const defaultTasks: AITask[] = [
   {
@@ -295,6 +432,16 @@ function useApp() {
 
 function AppProvider({ children }: { children: ReactNode }) {
   const [location, navigate] = useLocation()
+  const basePath = (import.meta.env.BASE_URL || '/').replace(/\/$/, '')
+  const withBase = (path: string) => {
+    const normalizedBase = basePath === '/' ? '' : basePath
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`
+    return `${normalizedBase}${normalizedPath}`
+  }
+  const withoutBase = (path: string) => {
+    const normalizedBase = basePath === '/' ? '' : basePath
+    return normalizedBase && path.startsWith(normalizedBase) ? path.slice(normalizedBase.length) || '/' : path
+  }
   const [isAICreationMode, setIsAICreationMode] = useState(false)
   const [currentAIView, setCurrentAIView] = useState<AIView>('home')
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null)
@@ -312,21 +459,22 @@ function AppProvider({ children }: { children: ReactNode }) {
   const enterAICreation = (view: AIView = 'home') => {
     setIsAICreationMode(true)
     setCurrentAIView(view)
-    navigate(view === 'home' ? '/ai' : `/ai/${view}`)
+    navigate(view === 'home' ? withBase('/ai') : withBase(`/ai/${view}`))
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const exitAICreation = () => {
     setIsAICreationMode(false)
     setCurrentAIView('home')
-    navigate('/')
+    navigate(withBase('/'))
   }
 
   const setAIView = (view: AIView) => {
     setCurrentAIView(view)
     if (view !== 'home') {
-      navigate(`/ai/${view}`)
+      navigate(withBase(`/ai/${view}`))
     } else {
-      navigate('/ai')
+      navigate(withBase('/ai'))
     }
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -335,6 +483,16 @@ function AppProvider({ children }: { children: ReactNode }) {
     const id = uid()
     const cfg = agentConfigs[agentType]
     const model = seed?.model ?? cfg.models.find((m) => m.recommended)?.name ?? cfg.models[0].name
+    const paramDefaults =
+      cfg.params?.reduce<Record<string, string>>((acc, param) => {
+        acc[param.key] = param.options[0]
+        return acc
+      }, {}) ?? {}
+    const introByAgent: Record<AgentType, string> = {
+      writer: 'AI 妙笔已就绪。描述你的主题后，我会先帮你确定写作角度与文案风格。',
+      gallery: 'AI 画廊已就绪。告诉我画面主体、风格和用途，我会生成4张候选图。',
+      studio: 'AI 影室已就绪。给我场景描述后，我会创建视频任务并持续反馈进度。'
+    }
     const convo: Conversation = {
       id,
       agentType,
@@ -342,20 +500,25 @@ function AppProvider({ children }: { children: ReactNode }) {
       createdAt: Date.now(),
       model,
       selectedSkills: seed?.skills ?? [],
-      extraParamValues: {},
-      meta: { writerStep: 0 },
+      extraParamValues: paramDefaults,
+      meta: agentType === 'writer' ? { writerStep: 0 } : undefined,
       messages: [
         {
           id: uid(),
           role: 'assistant',
           kind: 'text',
-          text: `${cfg.name}已就绪。告诉我你的创作目标，我会一步步帮你完成。`
+          text: introByAgent[agentType]
         },
         {
           id: uid(),
           role: 'assistant',
           kind: 'suggestions',
-          suggestions: ['先给我一个创作方向', '给我三个风格版本', '输出可直接发布版本']
+          suggestions:
+            agentType === 'writer'
+              ? ['先给我一个创作方向', '给我三个风格版本', '输出可直接发布版本']
+              : agentType === 'gallery'
+                ? ['生成国风水墨风格', '做一张活动海报', '按9:16竖版输出']
+                : ['做一段15秒产品展示', '生成赛博朋克夜景', '输出4K横版片段']
         }
       ]
     }
@@ -363,7 +526,7 @@ function AppProvider({ children }: { children: ReactNode }) {
     setActiveConversation(convo)
     setSelectedModel(model)
     setSelectedSkills(convo.selectedSkills)
-    setExtraParamValues({})
+    setExtraParamValues(paramDefaults)
     enterAICreation(agentType)
     return convo
   }
@@ -384,7 +547,49 @@ function AppProvider({ children }: { children: ReactNode }) {
   const goToConversation = (id: string) => {
     const convo = conversations.find((c) => c.id === id)
     if (!convo) {
-      toast.info('该任务暂无会话记录（Demo占位任务）')
+      const task = tasks.find((t) => t.conversationId === id)
+      if (task) {
+        const created = startConversation(task.agentType, { text: task.title, model: task.model })
+        updateTask(task.id, { conversationId: created.id })
+        patchConversation(created.id, (c) => ({
+          ...c,
+          messages: [
+            ...c.messages,
+            {
+              id: uid(),
+              role: 'assistant',
+              kind: task.agentType === 'writer' ? 'writing-result' : task.agentType === 'gallery' ? 'image-result' : 'video-result',
+              ...(task.agentType === 'writer'
+                ? {
+                    content:
+                      '这是从任务面板恢复的内容预览：创作任务已完成，你可以继续优化语气、补充观点，或直接发送到发布器。#AI创作 #微博创作空间'
+                  }
+                : task.agentType === 'gallery'
+                  ? {
+                      images: [
+                        'https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=900&q=80',
+                        'https://images.unsplash.com/photo-1519125323398-675f0ddb6308?auto=format&fit=crop&w=900&q=80',
+                        'https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=900&q=80',
+                        'https://images.unsplash.com/photo-1470770903676-69b98201ea1c?auto=format&fit=crop&w=900&q=80'
+                      ]
+                    }
+                  : {
+                      video: {
+                        cover:
+                          'https://images.unsplash.com/photo-1519608487953-e999c86e7455?auto=format&fit=crop&w=1200&q=80',
+                        duration: task.paramsSnapshot?.duration ?? '15秒',
+                        ratio: task.paramsSnapshot?.ratio ?? '16:9横版',
+                        resolution: task.paramsSnapshot?.resolution ?? '1080p'
+                      }
+                    })
+            }
+          ]
+        }))
+        toggleTaskPanel(false)
+        toast.success('已恢复任务对应会话')
+        return
+      }
+      toast.info('该任务暂无会话记录')
       return
     }
     setActiveConversation(convo)
@@ -413,23 +618,83 @@ function AppProvider({ children }: { children: ReactNode }) {
     if (convo.agentType === 'writer') {
       const step = convo.meta?.writerStep ?? 0
       if (step === 0) {
-        const options: ChatMessage = {
-          id: uid(),
-          role: 'assistant',
-          kind: 'options',
-          text: '收到，你希望从哪个角度展开？',
-          optionGroup: 'angle',
-          options: ['技术对比分析', '观点输出', '新闻解读', '实用建议']
-        }
-        patchConversation(convo.id, (c) => ({ ...c, meta: { writerStep: 1 }, messages: [...c.messages, userMsg, options] }))
+        patchConversation(convo.id, (c) => ({
+          ...c,
+          model: selectedModel,
+          selectedSkills,
+          extraParamValues: { ...extraParamValues },
+          meta: { writerStep: 1 },
+          messages: [
+            ...c.messages,
+            userMsg,
+            {
+              id: uid(),
+              role: 'assistant',
+              kind: 'options',
+              text: '收到，你希望从哪个角度展开？',
+              optionGroup: 'angle',
+              options: ['技术对比分析', '观点输出', '新闻解读', '实用建议']
+            }
+          ]
+        }))
+      } else if (step === 1) {
+        patchConversation(convo.id, (c) => ({
+          ...c,
+          model: selectedModel,
+          selectedSkills,
+          extraParamValues: { ...extraParamValues },
+          meta: { writerStep: 2 },
+          messages: [
+            ...c.messages,
+            userMsg,
+            {
+              id: uid(),
+              role: 'assistant',
+              kind: 'options',
+              text: '好的，文案风格你更偏向哪种？',
+              optionGroup: 'style',
+              options: ['专业严谨', '轻松幽默', '犀利点评', '娓娓道来']
+            }
+          ]
+        }))
+      } else {
+        const loadingId = uid()
+        patchConversation(convo.id, (c) => ({
+          ...c,
+          model: selectedModel,
+          selectedSkills,
+          extraParamValues: { ...extraParamValues },
+          messages: [...c.messages, userMsg, { id: loadingId, role: 'assistant', kind: 'loading', text: '正在思考...' }]
+        }))
+
+        setTimeout(() => {
+          patchConversation(convo!.id, (c) => ({
+            ...c,
+            messages: c.messages.map((m) =>
+              m.id === loadingId
+                ? {
+                    id: uid(),
+                    role: 'assistant',
+                    kind: 'writing-result',
+                    content:
+                      '过去一年，AI视频工具从“可用”走向“可落地”。如果你重视镜头连续性，SeeDance在运动场景更稳；如果你追求风格化表达，Kling在叙事感上更有优势。实际选型建议先看三件事：1）生成速度是否满足日更；2）角色一致性是否抗抖动；3）平台分发前是否支持快速二次编辑。对内容团队来说，最优解不是单模型，而是“主力+备份”的组合策略，既保证产能，也能应对热点突发。#AI视频工具 #内容创作 #AIGC'
+                  }
+                : m
+            )
+          }))
+        }, 1200)
       }
       return
     }
 
     if (convo.agentType === 'gallery') {
       const loadingId = uid()
+      const paramsSnapshot = { ...extraParamValues }
       patchConversation(convo.id, (c) => ({
         ...c,
+        model: selectedModel,
+        selectedSkills,
+        extraParamValues: paramsSnapshot,
         messages: [
           ...c.messages,
           userMsg,
@@ -437,7 +702,7 @@ function AppProvider({ children }: { children: ReactNode }) {
             id: uid(),
             role: 'assistant',
             kind: 'text',
-            text: `已确认参数：${selectedModel} · ${extraParamValues.ratio ?? '1:1方形'}，开始生成4张候选图。`
+            text: `已确认参数：${selectedModel} · ${paramsSnapshot.ratio ?? '1:1方形'} · ${paramsSnapshot.style ?? '写实'}，开始生成4张候选图。`
           },
           { id: loadingId, role: 'assistant', kind: 'loading', text: '正在思考...' }
         ]
@@ -466,35 +731,61 @@ function AppProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    if (convo.agentType === 'studio') {
-      const loadingId = uid()
-      patchConversation(convo.id, (c) => ({
+    const loadingId = uid()
+    const paramsSnapshot = { ...extraParamValues }
+    patchConversation(convo.id, (c) => ({
+      ...c,
+      model: selectedModel,
+      selectedSkills,
+      extraParamValues: paramsSnapshot,
+      messages: [
+        ...c.messages,
+        userMsg,
+        {
+          id: uid(),
+          role: 'assistant',
+          kind: 'text',
+          text: `已确认参数：${selectedModel} · ${paramsSnapshot.duration ?? '15秒'} · ${paramsSnapshot.resolution ?? '1080p'} · ${paramsSnapshot.ratio ?? '16:9横版'}，任务已创建。`
+        },
+        { id: loadingId, role: 'assistant', kind: 'loading', text: '正在思考...' }
+      ]
+    }))
+    const taskId = uid()
+    addTask({
+      id: taskId,
+      title: `${text.slice(0, 18)} - ${paramsSnapshot.resolution ?? '1080p'}视频`,
+      agentType: 'studio',
+      model: selectedModel,
+      progress: 8,
+      status: 'in_progress',
+      createdAt: Date.now(),
+      conversationId: convo.id,
+      loadingMessageId: loadingId,
+      paramsSnapshot
+    })
+    setTimeout(() => {
+      updateTask(taskId, { progress: 100, status: 'completed' })
+      patchConversation(convo!.id, (c) => ({
         ...c,
-        messages: [
-          ...c.messages,
-          userMsg,
-          {
-            id: uid(),
-            role: 'assistant',
-            kind: 'text',
-            text: `已确认参数：${selectedModel} · ${extraParamValues.duration ?? '15秒'} · ${extraParamValues.resolution ?? '1080p'} · ${extraParamValues.ratio ?? '16:9横版'}，任务已创建。`
-          },
-          { id: loadingId, role: 'assistant', kind: 'loading', text: '正在思考...' }
-        ]
+        messages: c.messages.map((m) =>
+          m.id === loadingId
+            ? {
+                id: uid(),
+                role: 'assistant',
+                kind: 'video-result',
+                video: {
+                  cover:
+                    'https://images.unsplash.com/photo-1519608487953-e999c86e7455?auto=format&fit=crop&w=1200&q=80',
+                  duration: paramsSnapshot.duration ?? '15秒',
+                  ratio: paramsSnapshot.ratio ?? '16:9横版',
+                  resolution: paramsSnapshot.resolution ?? '1080p'
+                }
+              }
+            : m
+        )
       }))
-      addTask({
-        id: uid(),
-        title: `${text.slice(0, 18)} - ${extraParamValues.resolution ?? '1080p'}视频`,
-        agentType: 'studio',
-        model: selectedModel,
-        progress: 8,
-        status: 'in_progress',
-        createdAt: Date.now(),
-        conversationId: convo.id,
-        loadingMessageId: loadingId
-      })
-      toast.info('视频任务已加入创作任务')
-    }
+    }, 5200)
+    toast.info('视频任务已加入创作任务')
   }
 
   const selectOption = (option: string, group: 'angle' | 'style') => {
@@ -506,6 +797,9 @@ function AppProvider({ children }: { children: ReactNode }) {
       patchConversation(convoId, (c) => ({
         ...c,
         meta: { writerStep: 2 },
+        model: selectedModel,
+        selectedSkills,
+        extraParamValues: { ...extraParamValues },
         messages: [
           ...c.messages,
           userMsg,
@@ -525,6 +819,10 @@ function AppProvider({ children }: { children: ReactNode }) {
     const loadingId = uid()
     patchConversation(convoId, (c) => ({
       ...c,
+      meta: { writerStep: 3 },
+      model: selectedModel,
+      selectedSkills,
+      extraParamValues: { ...extraParamValues },
       messages: [...c.messages, userMsg, { id: loadingId, role: 'assistant', kind: 'loading', text: '正在思考...' }]
     }))
 
@@ -575,9 +873,9 @@ function AppProvider({ children }: { children: ReactNode }) {
                     video: {
                       cover:
                         'https://images.unsplash.com/photo-1519608487953-e999c86e7455?auto=format&fit=crop&w=1200&q=80',
-                      duration: extraParamValues.duration ?? '15秒',
-                      ratio: extraParamValues.ratio ?? '16:9横版',
-                      resolution: extraParamValues.resolution ?? '1080p'
+                      duration: task.paramsSnapshot?.duration ?? '15秒',
+                      ratio: task.paramsSnapshot?.ratio ?? '16:9横版',
+                      resolution: task.paramsSnapshot?.resolution ?? '1080p'
                     }
                   }
                 : m
@@ -587,17 +885,15 @@ function AppProvider({ children }: { children: ReactNode }) {
       }
     }, 800)
     return () => clearInterval(timer)
-  }, [extraParamValues])
+  }, [])
 
   useEffect(() => {
-    if (location.startsWith('/ai')) {
+    const rawPath = typeof window !== 'undefined' ? window.location.pathname : location
+    const aiMatch = rawPath.match(/\/ai(?:\/(writer|gallery|studio))?$/)
+    if (aiMatch) {
       setIsAICreationMode(true)
-      const seg = location.split('/')[2]
-      if (seg === 'writer' || seg === 'gallery' || seg === 'studio') {
-        setCurrentAIView(seg)
-      } else {
-        setCurrentAIView('home')
-      }
+      const seg = aiMatch[1]
+      setCurrentAIView(seg === 'writer' || seg === 'gallery' || seg === 'studio' ? seg : 'home')
       return
     }
     setIsAICreationMode(false)
@@ -693,22 +989,56 @@ function Dropdown({
 }
 
 function TopNav() {
+  const navItems = [
+    { label: '首页', icon: <Home size={15} />, active: true },
+    { label: '推荐', icon: <Compass size={15} /> },
+    { label: '视频', icon: <Film size={15} /> },
+    { label: '消息', icon: <MessageSquare size={15} /> },
+    { label: '刘彬', icon: <UserRound size={15} /> }
+  ]
+
   return (
-    <header className="sticky top-0 z-40 border-b bg-white/95 backdrop-blur">
-      <div className="mx-auto flex h-14 w-full max-w-[1280px] items-center justify-between px-4">
-        <div className="flex items-center gap-3">
-          <div className="h-7 w-7 rounded-full bg-[#ff8200]" />
-          <span className="text-sm font-semibold">微博</span>
+    <header className="sticky top-0 z-40 border-b border-[#e6e6e6] bg-white">
+      <div className="mx-auto flex h-[52px] w-full max-w-[1180px] items-center justify-between px-1">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <div className="h-6 w-6 rounded-full bg-[#ff8200]" />
+            <span className="text-sm font-semibold text-[#333]">微博</span>
+          </div>
+          <nav className="hidden items-center gap-1 md:flex">
+            {navItems.map((item) => (
+              <button
+                key={item.label}
+                className={`inline-flex items-center gap-1 rounded-sm px-2 py-1 text-sm ${
+                  item.active ? 'text-[#ff8200]' : 'text-[#333] hover:bg-[#f2f2f5]'
+                }`}
+              >
+                {item.icon}
+                {item.label}
+              </button>
+            ))}
+          </nav>
         </div>
-        <div className="flex w-[460px] items-center gap-2 rounded-full border bg-gray-50 px-3 py-2">
-          <Search size={15} className="text-gray-400" />
-          <input className="w-full border-none bg-transparent text-sm outline-none" placeholder="搜索微博" />
+
+        <div className="mx-4 flex w-[320px] items-center gap-2 rounded-[16px] bg-[#f2f2f5] px-3 py-1.5">
+          <Search size={14} className="text-[#808080]" />
+          <input
+            className="w-full border-none bg-transparent text-xs text-[#333] outline-none placeholder:text-[#9f9f9f]"
+            placeholder="大家都在搜：AIGC"
+          />
         </div>
-        <div className="flex items-center gap-4 text-sm text-gray-600">
-          <button className="rounded-full bg-[#ff8200] px-3 py-1.5 text-white">发布</button>
-          <MessageCircle size={18} />
-          <CircleUserRound size={20} />
-          <span>刘彬</span>
+
+        <div className="flex items-center gap-2 text-[#666]">
+          <button className="hidden rounded-full bg-[#ff8200] px-3 py-1 text-xs text-white md:inline-flex">发微博</button>
+          <button className="rounded p-1 hover:bg-[#f2f2f5]">
+            <Bell size={16} />
+          </button>
+          <button className="rounded p-1 hover:bg-[#f2f2f5]">
+            <MessageCircle size={16} />
+          </button>
+          <button className="rounded p-1 hover:bg-[#f2f2f5]">
+            <Menu size={16} />
+          </button>
         </div>
       </div>
     </header>
@@ -716,20 +1046,43 @@ function TopNav() {
 }
 
 function LeftSidebar() {
-  const items = ['首页', '热门', '视频', '消息', '我的', '更多']
+  const items = [
+    { label: '首页', icon: <Home size={14} />, active: true },
+    { label: '热门', icon: <Flame size={14} /> },
+    { label: '视频', icon: <Film size={14} /> },
+    { label: '消息', icon: <MessageSquareDot size={14} /> },
+    { label: '我的', icon: <UserRound size={14} /> },
+    { label: '更多', icon: <ChevronsUpDown size={14} /> }
+  ]
+
   return (
-    <aside className="space-y-2 rounded-xl bg-white p-3 shadow-sm">
-      {items.map((item, idx) => (
-        <button
-          key={item}
-          className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm ${
-            idx === 0 ? 'bg-orange-50 text-[#ff8200]' : 'text-gray-600 hover:bg-gray-50'
-          }`}
-        >
-          <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 text-xs">{idx + 1}</span>
-          {item}
-        </button>
-      ))}
+    <aside className="space-y-3">
+      <section className="rounded-[4px] border border-[#e6e6e6] bg-white p-2">
+        {items.map((item) => (
+          <button
+            key={item.label}
+            className={`mb-1 flex w-full items-center gap-2 rounded-[4px] px-2 py-1.5 text-left text-sm ${
+              item.active ? 'bg-[#fff4e8] text-[#ff8200]' : 'text-[#333] hover:bg-[#f8f8f8]'
+            }`}
+          >
+            <span className={`${item.active ? 'text-[#ff8200]' : 'text-[#999]'}`}>{item.icon}</span>
+            {item.label}
+          </button>
+        ))}
+      </section>
+
+      <section className="rounded-[4px] border border-[#e6e6e6] bg-white p-2">
+        <div className="mb-2 flex items-center justify-between text-xs text-[#666]">
+          <span>自定义分组</span>
+          <button className="text-[#999]">管理</button>
+        </div>
+        {['AI机器人', '国际新闻/军事', '互联网业界', '设计', '游戏'].map((group) => (
+          <button key={group} className="mb-1 flex w-full items-center gap-2 rounded-[4px] px-2 py-1 text-left text-xs text-[#666] hover:bg-[#f8f8f8]">
+            <span className="text-[10px] text-[#aaa]">●</span>
+            {group}
+          </button>
+        ))}
+      </section>
     </aside>
   )
 }
@@ -737,32 +1090,47 @@ function LeftSidebar() {
 function RightSidebar() {
   return (
     <aside className="space-y-3">
-      <section className="rounded-xl bg-white p-4 shadow-sm">
-        <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-sm font-semibold">微博热搜</h3>
-          <span className="text-xs text-gray-400">点击刷新</span>
+      <section className="rounded-[4px] border border-[#e6e6e6] bg-white">
+        <div className="flex items-center justify-between border-b border-[#f0f0f0] px-3 py-2">
+          <h3 className="text-sm font-medium text-[#333]">微博热搜</h3>
+          <button className="inline-flex items-center gap-1 text-xs text-[#999]">
+            <TrendingUp size={12} />
+            点击刷新
+          </button>
         </div>
-        <ul className="space-y-2">
-          {hotList.map((h, idx) => (
-            <li key={h} className="flex items-center gap-2 text-sm">
-              <span className={`w-5 text-xs ${idx < 3 ? 'text-[#ff8200]' : 'text-gray-400'}`}>{idx + 1}</span>
-              <span className="line-clamp-1 flex-1">{h}</span>
-              {idx < 4 && <span className="text-[10px] text-rose-500">热</span>}
+        <ul className="p-2">
+          {hotList.map((item, idx) => (
+            <li key={item.title}>
+              <button className="flex w-full items-center gap-2 rounded-[4px] px-1 py-1.5 text-left hover:bg-[#f8f8f8]">
+                <span className={`w-4 text-center text-xs ${idx < 3 ? 'text-[#ff8200]' : 'text-[#999]'}`}>{idx + 1}</span>
+                <span className="line-clamp-1 flex-1 text-xs text-[#333]">{item.title}</span>
+                <span className="text-[10px] text-[#999]">{item.heat}</span>
+                {item.hot && <span className="text-[10px] text-[#ff8200]">热</span>}
+              </button>
             </li>
           ))}
         </ul>
       </section>
 
-      <section className="rounded-xl bg-white p-4 shadow-sm">
-        <h3 className="mb-3 text-sm font-semibold">推荐关注</h3>
+      <section className="rounded-[4px] border border-[#e6e6e6] bg-white p-3">
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="text-sm font-medium text-[#333]">你可能感兴趣的人</h3>
+          <button className="text-xs text-[#999]">换一换</button>
+        </div>
         <div className="space-y-3">
-          {recommends.map((name) => (
-            <div key={name} className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-full bg-gray-200" />
-                <span className="text-sm">{name}</span>
+          {recommends.map((item) => (
+            <div key={item.name} className="flex items-start justify-between gap-2">
+              <div className="flex items-start gap-2">
+                <div className="h-9 w-9 rounded-full bg-[#e9ebee]" />
+                <div>
+                  <div className="text-xs font-medium text-[#333]">{item.name}</div>
+                  <div className="line-clamp-2 text-[11px] text-[#999]">{item.desc}</div>
+                </div>
               </div>
-              <button className="rounded-full border px-3 py-1 text-xs text-gray-600">关注</button>
+              <button className="inline-flex items-center gap-1 rounded-full border border-[#ff8200]/40 px-2 py-0.5 text-[11px] text-[#ff8200]">
+                <UserPlus size={10} />
+                关注
+              </button>
             </div>
           ))}
         </div>
@@ -774,71 +1142,159 @@ function RightSidebar() {
 function Publisher() {
   const { publisherText, setPublisherText, aiReadyBanner, closeBanner, publisherImages, publisherVideo } = useApp()
   return (
-    <div className="rounded-xl border bg-white p-4 shadow-sm">
+    <div className="rounded-[4px] border border-[#e6e6e6] bg-white p-3">
       {aiReadyBanner && (
-        <div className="mb-3 flex items-center justify-between rounded-lg bg-gradient-to-r from-[#6366F1] to-[#8B5CF6] px-3 py-2 text-sm text-white">
+        <div className="mb-3 flex items-center justify-between rounded-[4px] bg-gradient-to-r from-[#6366F1] to-[#8B5CF6] px-3 py-2 text-sm text-white">
           <span>AI创作内容已就绪 · 可编辑后发布</span>
           <button onClick={closeBanner}>
             <X size={14} />
           </button>
         </div>
       )}
-      <div className="mb-3 flex gap-3">
-        <div className="h-9 w-9 rounded-full bg-gray-200" />
-        <textarea
-          value={publisherText}
-          onChange={(e) => setPublisherText(e.target.value)}
-          placeholder="有什么新鲜事想分享给大家？"
-          className="h-24 w-full resize-none rounded-lg border p-3 text-sm outline-none focus:border-[#ff8200]"
-        />
-      </div>
-      {(publisherImages.length > 0 || publisherVideo) && (
-        <div className="mb-3 rounded-lg border bg-gray-50 p-2 text-xs text-gray-600">
-          {publisherImages.length > 0 && <div>已附带图片 {publisherImages.length} 张</div>}
-          {publisherVideo && <div>已附带视频预览</div>}
+      <div className="flex gap-3">
+        <div className="h-8 w-8 rounded-full bg-[#e9ebee]" />
+        <div className="flex-1">
+          <textarea
+            value={publisherText}
+            onChange={(e) => setPublisherText(e.target.value)}
+            placeholder="有什么新鲜事想分享给大家？"
+            className="h-20 w-full resize-none border-none px-1 py-1 text-sm leading-6 text-[#333] outline-none placeholder:text-[#9f9f9f]"
+          />
+          {(publisherImages.length > 0 || publisherVideo) && (
+            <div className="mb-2 rounded-[4px] border border-[#ebeef5] bg-[#f8f9ff] p-2 text-xs text-[#5f66b8]">
+              {publisherImages.length > 0 && <div>已附带图片 {publisherImages.length} 张</div>}
+              {publisherVideo && <div>已附带视频预览</div>}
+            </div>
+          )}
+          <div className="flex items-center justify-between border-t border-[#f0f0f0] pt-2">
+            <div className="flex items-center gap-4 text-xs text-[#808080]">
+              <button className="inline-flex items-center gap-1 hover:text-[#ff8200]">
+                <Laugh size={14} /> 表情
+              </button>
+              <button className="inline-flex items-center gap-1 hover:text-[#ff8200]">
+                <ImagePlus size={14} /> 图片
+              </button>
+              <button className="inline-flex items-center gap-1 hover:text-[#ff8200]">
+                <Film size={14} /> 视频
+              </button>
+              <button className="inline-flex items-center gap-1 hover:text-[#ff8200]">
+                <Hash size={14} /> 话题
+              </button>
+              <button className="inline-flex items-center gap-1 hover:text-[#ff8200]">
+                <Vote size={14} /> 投票
+              </button>
+            </div>
+            <button className="rounded-[14px] bg-[#ff8200] px-4 py-1 text-xs text-white">发送</button>
+          </div>
         </div>
-      )}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4 text-sm text-gray-500">
-          <span>图片</span>
-          <span>视频</span>
-          <span>话题</span>
-          <span>表情</span>
-          <span>投票</span>
-        </div>
-        <button className="rounded-full bg-[#ff8200] px-4 py-1.5 text-sm text-white">发布</button>
       </div>
     </div>
   )
 }
 
+function formatCount(value: number) {
+  if (value >= 10000) return `${(value / 10000).toFixed(1)}万`
+  if (value >= 1000) return `${(value / 1000).toFixed(1)}k`
+  return String(value)
+}
+
 function Feed() {
   return (
-    <div className="mt-3 space-y-3">
-      {feedPosts.map((p) => (
-        <article key={`${p.name}-${p.time}`} className="rounded-xl border bg-white p-4 shadow-sm">
-          <div className="mb-2 flex items-center gap-2 text-sm">
-            <div className="h-8 w-8 rounded-full bg-gray-200" />
-            <span className="font-medium">{p.name}</span>
-            <span className="text-gray-400">{p.time}</span>
+    <div className="mt-2 space-y-2">
+      <div className="rounded-[4px] border border-[#e6e6e6] bg-white">
+        <div className="flex items-center border-b border-[#f0f0f0] px-3">
+          {['全部', '原创', '视频', '超话社区', '新鲜事'].map((tab, idx) => (
+            <button
+              key={tab}
+              className={`mr-4 border-b-2 py-2 text-xs ${
+                idx === 0 ? 'border-[#ff8200] text-[#ff8200]' : 'border-transparent text-[#666] hover:text-[#333]'
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {feedPosts.map((post) => (
+        <article
+          key={post.id}
+          className="block w-full rounded-[4px] border border-[#e6e6e6] bg-white p-3 text-left"
+        >
+          <div className="flex gap-2">
+            <div className="h-10 w-10 rounded-full bg-[#e9ebee]" />
+            <div className="min-w-0 flex-1">
+              <div className="mb-1 flex items-center gap-1">
+                <span className="text-sm font-medium text-[#333]">{post.name}</span>
+                <span className="inline-flex items-center gap-0.5 rounded-full bg-[#fff4e8] px-1 py-0.5 text-[10px] text-[#ff8200]">
+                  <ShieldCheck size={10} /> 认证
+                </span>
+              </div>
+              <div className="mb-2 text-[11px] text-[#999]">
+                {post.time} · 来自 {post.source}
+              </div>
+              <p className="mb-2 text-sm leading-6 text-[#333]">{post.text}</p>
+
+              {!!post.images?.length && (
+                <div className={`mb-2 grid gap-1 ${post.images.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                  {post.images.map((img) => (
+                    <img key={img} src={img} className={`rounded-[4px] object-cover ${post.images!.length === 1 ? 'max-h-60 w-full' : 'h-32 w-full'}`} />
+                  ))}
+                </div>
+              )}
+
+              <div className="flex items-center justify-between border-t border-[#f5f5f5] pt-2 text-xs text-[#808080]">
+                <button className="inline-flex items-center gap-1 hover:text-[#ff8200]">
+                  <Repeat2 size={13} />
+                  转发 {formatCount(post.stat.repost)}
+                </button>
+                <button className="inline-flex items-center gap-1 hover:text-[#ff8200]">
+                  <MessageSquare size={13} />
+                  评论 {formatCount(post.stat.comment)}
+                </button>
+                <button className="inline-flex items-center gap-1 hover:text-[#ff8200]">
+                  <Heart size={13} />
+                  赞 {formatCount(post.stat.like)}
+                </button>
+              </div>
+            </div>
           </div>
-          <p className="mb-3 text-sm leading-6 text-gray-700">{p.text}</p>
-          <div className="text-xs text-gray-400">{p.stat}</div>
         </article>
       ))}
     </div>
   )
 }
 
+function QwenMark({ className = '' }: { className?: string }) {
+  return (
+    <span className={`inline-flex h-4 w-4 items-center justify-center rounded bg-gradient-to-br from-[#6366F1] to-[#8B5CF6] text-[10px] font-semibold text-white ${className}`}>
+      Q
+    </span>
+  )
+}
+
 function AICreationPanel() {
-  const { startConversation, selectedModel, setSelectedModel, sendUserInput, setAIView, setSelectedSkills } = useApp()
+  const { startConversation, selectedModel, setSelectedModel, sendUserInput, setSelectedSkills } = useApp()
   const [text, setText] = useState('')
   const [tab, setTab] = useState<'全部' | '写作' | '图片' | '视频'>('全部')
+  const [selectedAgent, setSelectedAgent] = useState<AgentType>('writer')
+  const [agentOpen, setAgentOpen] = useState(false)
+  const [modelOpen, setModelOpen] = useState(false)
+  const inputRef = useRef<HTMLTextAreaElement | null>(null)
+
+  const agent = agentConfigs[selectedAgent]
+  const filtered = templatePresets.filter((t) => (tab === '全部' ? true : t.type === tab))
+
+  useEffect(() => {
+    const recommended = agent.models.find((m) => m.recommended)?.name ?? agent.models[0].name
+    if (!agent.models.some((model) => model.name === selectedModel)) {
+      setSelectedModel(recommended)
+    }
+  }, [agent.models, selectedModel, setSelectedModel])
 
   const submit = () => {
     if (!text.trim()) return
-    startConversation('writer', { text, model: selectedModel })
-    setAIView('writer')
+    startConversation(selectedAgent, { text, model: selectedModel })
     setTimeout(() => {
       const el = document.querySelector('[data-chat-input]') as HTMLTextAreaElement | null
       el?.focus()
@@ -847,21 +1303,24 @@ function AICreationPanel() {
     setText('')
   }
 
-  const filtered = templatePresets.filter((t) => (tab === '全部' ? true : t.type === tab))
-
   return (
-    <div className="space-y-5 rounded-xl border bg-white p-4 shadow-sm">
+    <div className="space-y-5 rounded-[4px] border border-[#e6e6e6] bg-white p-4">
       <div>
-        <h2 className="text-2xl font-semibold">你好，想创作什么？</h2>
-        <p className="mt-1 text-sm text-gray-500">选择一个智能体开始对话，或直接输入你的创作想法</p>
+        <h2 className="text-2xl font-semibold text-[#1f2937]">你好，想创作什么？</h2>
+        <p className="mt-1 text-sm text-[#6b7280]">选择一个智能体开始对话，或直接输入你的创作想法</p>
       </div>
 
       <div className="grid grid-cols-3 gap-3">
         {(Object.values(agentConfigs) as AgentConfig[]).map((agent) => (
           <button
             key={agent.id}
-            onClick={() => startConversation(agent.id)}
-            className="flex items-center justify-between rounded-xl border p-3 text-left hover:border-[#6C5CE7]/40"
+            onClick={() => {
+              setSelectedAgent(agent.id)
+              const recommended = agent.models.find((m) => m.recommended)?.name ?? agent.models[0].name
+              setSelectedModel(recommended)
+              startConversation(agent.id)
+            }}
+            className="flex items-center justify-between rounded-[8px] border border-[#eceef3] p-3 text-left hover:border-[#6C5CE7]/40 hover:bg-[#faf9ff]"
           >
             <div>
               <div className="mb-1 flex items-center gap-2 font-medium">
@@ -870,43 +1329,86 @@ function AICreationPanel() {
                 </span>
                 {agent.name}
               </div>
-              <p className="text-xs text-gray-500">{agent.description}</p>
+              <p className="text-xs text-[#6b7280]">{agent.description}</p>
             </div>
-            <ArrowRight size={16} className="text-gray-400" />
+            <ArrowRight size={16} className="text-[#9ca3af]" />
           </button>
         ))}
       </div>
 
-      <div className="rounded-xl border p-3">
+      <div className="rounded-[8px] border border-[#e5e7eb] p-3">
         <textarea
+          ref={inputRef}
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="告诉我你想创作什么..."
-          className="h-24 w-full resize-none border-none text-sm outline-none"
+          className="h-24 w-full resize-none border-none text-sm leading-6 text-[#111827] outline-none placeholder:text-[#9ca3af]"
         />
         <div className="mt-2 flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm">
-            <select
-              value={'AI妙笔'}
-              className="rounded-md border px-2 py-1 text-xs"
-              onChange={(e) => {
-                const name = e.target.value
-                const agent = (Object.values(agentConfigs) as AgentConfig[]).find((a) => a.name === name)
-                if (agent) setAIView(agent.id)
-              }}
-            >
-              <option>AI妙笔</option>
-              <option>AI画廊</option>
-              <option>AI影室</option>
-            </select>
-            <select value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)} className="rounded-md border px-2 py-1 text-xs">
-              <option>Qwen 3.0</option>
-              <option>DeepSeek R1</option>
-              <option>SeeArt Pro</option>
-              <option>SeeDance 2.0</option>
-            </select>
-            <button className="rounded-md border px-2 py-1 text-xs">技能</button>
-            <button className="rounded-md border p-1">
+            <div className="relative">
+              <button className="inline-flex items-center gap-2 rounded-full border border-[#e5e7eb] px-3 py-1 text-xs text-[#374151]" onClick={() => setAgentOpen((v) => !v)}>
+                <span className="inline-flex h-4 w-4 items-center justify-center rounded text-white" style={{ background: agent.color }}>
+                  {agent.icon}
+                </span>
+                {agent.name}
+                <ChevronDown size={12} />
+              </button>
+              <Dropdown open={agentOpen} onClose={() => setAgentOpen(false)} className="absolute left-0 top-full z-30 mt-2 w-52">
+                <div className="rounded-[8px] border border-[#e5e7eb] bg-white p-1 shadow-xl">
+                  {(Object.values(agentConfigs) as AgentConfig[]).map((item) => (
+                    <button
+                      key={item.id}
+                      className="mb-1 flex w-full items-center justify-between rounded-md px-2 py-2 text-left text-xs hover:bg-[#f9fafb]"
+                      onClick={() => {
+                        setSelectedAgent(item.id)
+                        const recommended = item.models.find((m) => m.recommended)?.name ?? item.models[0].name
+                        setSelectedModel(recommended)
+                        setAgentOpen(false)
+                      }}
+                    >
+                      <span className="inline-flex items-center gap-2">
+                        <span className="inline-flex h-4 w-4 items-center justify-center rounded text-white" style={{ background: item.color }}>
+                          {item.icon}
+                        </span>
+                        {item.name}
+                      </span>
+                      {selectedAgent === item.id && <Check size={12} className="text-[#6C5CE7]" />}
+                    </button>
+                  ))}
+                </div>
+              </Dropdown>
+            </div>
+
+            <div className="relative">
+              <button className="inline-flex items-center gap-1 rounded-full border border-[#e5e7eb] px-3 py-1 text-xs text-[#374151]" onClick={() => setModelOpen((v) => !v)}>
+                {selectedModel}
+                <ChevronDown size={12} />
+              </button>
+              <Dropdown open={modelOpen} onClose={() => setModelOpen(false)} className="absolute left-0 top-full z-30 mt-2 w-56">
+                <div className="rounded-[8px] border border-[#e5e7eb] bg-white p-1 shadow-xl">
+                  {agent.models.map((model) => (
+                    <button
+                      key={model.name}
+                      className="mb-1 flex w-full items-center justify-between rounded-md px-2 py-2 text-left text-xs hover:bg-[#f9fafb]"
+                      onClick={() => {
+                        setSelectedModel(model.name)
+                        setModelOpen(false)
+                      }}
+                    >
+                      <span>
+                        {model.name}
+                        <span className="ml-1 text-[#9ca3af]">{model.provider}</span>
+                      </span>
+                      {selectedModel === model.name && <Check size={12} className="text-[#6C5CE7]" />}
+                    </button>
+                  ))}
+                </div>
+              </Dropdown>
+            </div>
+
+            <button className="rounded-full border border-[#e5e7eb] px-3 py-1 text-xs text-[#374151]">技能</button>
+            <button className="rounded-full border border-[#e5e7eb] p-1.5 text-[#6b7280]">
               <Paperclip size={14} />
             </button>
           </div>
@@ -926,13 +1428,16 @@ function AICreationPanel() {
             onClick={() => {
               setText(tag.text)
               setSelectedSkills([])
-              setAIView(tag.agent)
+              setSelectedAgent(tag.agent)
+              const recommended = agentConfigs[tag.agent].models.find((m) => m.recommended)?.name ?? agentConfigs[tag.agent].models[0].name
+              setSelectedModel(recommended)
+              inputRef.current?.focus()
             }}
-            className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs text-gray-600 hover:border-[#6C5CE7]/40"
+            className="inline-flex items-center gap-2 rounded-full border border-[#e5e7eb] px-3 py-1 text-xs text-[#4b5563] hover:border-[#6C5CE7]/40 hover:bg-[#faf9ff]"
           >
             <span className="h-2 w-2 rounded-full" style={{ background: agentConfigs[tag.agent].color }} />
             {tag.text}
-            {tag.hot && <span className="text-rose-500">热</span>}
+            {tag.hot && <span className="text-[#ef4444]">热</span>}
           </button>
         ))}
       </div>
@@ -947,7 +1452,7 @@ function AICreationPanel() {
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`rounded-full px-3 py-1 ${tab === t ? 'bg-[#6C5CE7]/10 text-[#6C5CE7]' : 'text-gray-500 hover:bg-gray-100'}`}
+              className={`rounded-full px-3 py-1 ${tab === t ? 'bg-[#6C5CE7]/10 text-[#6C5CE7]' : 'text-[#6b7280] hover:bg-[#f3f4f6]'}`}
             >
               {t}
             </button>
@@ -959,11 +1464,11 @@ function AICreationPanel() {
             <button
               key={tpl.name}
               onClick={() => startConversation(tpl.agent, { text: tpl.name, model: tpl.model, skills: tpl.skills })}
-              className="rounded-xl border p-3 text-left hover:border-[#6C5CE7]/40"
+              className="rounded-[8px] border border-[#eceef3] p-3 text-left hover:border-[#6C5CE7]/40 hover:bg-[#faf9ff]"
             >
               <div className="mb-2 text-lg">{tpl.emoji}</div>
               <div className="text-sm font-semibold">{tpl.name}</div>
-              <p className="mt-1 text-xs text-gray-500">{tpl.type}模板，快速生成首版内容</p>
+              <p className="mt-1 text-xs text-[#6b7280]">{tpl.desc}</p>
               <div className="mt-2 flex flex-wrap gap-1 text-[10px]">
                 <span className="rounded-full px-2 py-0.5" style={{ background: `${agentConfigs[tpl.agent].color}1A`, color: agentConfigs[tpl.agent].color }}>
                   {agentConfigs[tpl.agent].name}
@@ -978,14 +1483,28 @@ function AICreationPanel() {
 
       <div className="flex items-center justify-between rounded-lg border border-[#6C5CE7]/20 bg-[#6C5CE7]/5 px-3 py-2 text-sm">
         <span>Wegent 智能平台 · 即将上线 · 更多智能体 · 更多模型 · 微博数据深度整合</span>
-        <button className="text-[#6C5CE7]">了解更多</button>
+        <button className="inline-flex items-center gap-1 text-[#6C5CE7]">
+          了解更多
+          <ArrowRight size={12} />
+        </button>
       </div>
     </div>
   )
 }
 
+function renderBoldText(text: string) {
+  const chunks = text.split(/(\*\*[^*]+\*\*)/g)
+  return chunks.map((chunk, idx) =>
+    chunk.startsWith('**') && chunk.endsWith('**') ? (
+      <strong key={`${chunk}-${idx}`}>{chunk.slice(2, -2)}</strong>
+    ) : (
+      <span key={`${chunk}-${idx}`}>{chunk}</span>
+    )
+  )
+}
+
 function ChatMessageItem({ message }: { message: ChatMessage }) {
-  const { selectOption, sendToPublisher } = useApp()
+  const { selectOption, sendToPublisher, sendUserInput } = useApp()
   const isUser = message.role === 'user'
   return (
     <motion.div
@@ -1001,7 +1520,7 @@ function ChatMessageItem({ message }: { message: ChatMessage }) {
               isUser ? 'bg-gradient-to-r from-[#6366F1] to-[#8B5CF6] text-white' : 'border bg-gray-50 text-gray-700'
             }`}
           >
-            {message.text}
+            {message.text ? renderBoldText(message.text) : null}
           </div>
         )}
 
@@ -1025,9 +1544,13 @@ function ChatMessageItem({ message }: { message: ChatMessage }) {
         {message.kind === 'suggestions' && (
           <div className="mt-2 flex flex-wrap gap-2">
             {message.suggestions?.map((s) => (
-              <span key={s} className="rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-600">
+              <button
+                key={s}
+                onClick={() => sendUserInput(s)}
+                className="rounded-full border border-[#e5e7eb] bg-white px-3 py-1 text-xs text-[#6b7280] hover:border-[#6C5CE7]/40 hover:bg-[#faf9ff]"
+              >
                 {s}
-              </span>
+              </button>
             ))}
           </div>
         )}
@@ -1114,19 +1637,24 @@ function AIChatView() {
     setSelectedSkills,
     extraParamValues,
     setExtraParamValues,
+    conversations,
     tasks,
-    toggleTaskPanel
+    toggleTaskPanel,
+    startConversation,
+    goToConversation
   } = useApp()
 
   const [modelOpen, setModelOpen] = useState(false)
   const [skillOpen, setSkillOpen] = useState(false)
   const [paramOpen, setParamOpen] = useState(false)
+  const [historyOpen, setHistoryOpen] = useState(false)
   const [input, setInput] = useState('')
   const inputRef = useRef<HTMLTextAreaElement | null>(null)
   const bottomRef = useRef<HTMLDivElement | null>(null)
 
   const agent = activeConversation ? agentConfigs[activeConversation.agentType] : agentConfigs.writer
   const runningCount = tasks.filter((t) => t.status === 'in_progress').length
+  const historyList = useMemo(() => conversations.slice(0, 8), [conversations])
 
   useEffect(() => {
     const t = setTimeout(() => inputRef.current?.focus(), 300)
@@ -1139,17 +1667,17 @@ function AIChatView() {
 
   if (!activeConversation) {
     return (
-      <div className="rounded-xl border bg-white p-6 text-sm text-gray-500">
+      <div className="rounded-[4px] border border-[#e6e6e6] bg-white p-6 text-sm text-gray-500">
         请选择智能体开始对话
       </div>
     )
   }
 
   return (
-    <div className="rounded-xl border bg-white shadow-sm">
-      <div className="flex items-center justify-between border-b px-4 py-3">
+    <div className="rounded-[4px] border border-[#e6e6e6] bg-white">
+      <div className="flex items-center justify-between border-b border-[#eceef3] px-4 py-3">
         <div className="flex items-center gap-2">
-          <button onClick={() => setAIView('home')} className="rounded-md border p-1.5 text-gray-500 hover:bg-gray-50">
+          <button onClick={() => setAIView('home')} className="rounded-md border border-[#e5e7eb] p-1.5 text-gray-500 hover:bg-gray-50">
             <ArrowLeft size={14} />
           </button>
           <div className="inline-flex h-8 w-8 items-center justify-center rounded-md text-white" style={{ background: agent.color }}>
@@ -1162,16 +1690,51 @@ function AIChatView() {
         </div>
 
         <div className="flex items-center gap-2 text-sm">
-          <button onClick={() => toggleTaskPanel(true)} className="relative rounded-full bg-[#6C5CE7] px-3 py-1.5 text-xs text-white">
+          <button onClick={() => toggleTaskPanel(true)} className="relative inline-flex items-center gap-1 rounded-full bg-[#6C5CE7] px-3 py-1.5 text-xs text-white">
+            <Clock3 size={12} />
             创作任务
-            {runningCount > 0 && <span className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-white px-1 text-[10px] text-[#6C5CE7]">{runningCount}</span>}
+            {runningCount > 0 && <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-white px-1 text-[10px] text-[#6C5CE7]">{runningCount}</span>}
           </button>
-          <button className="rounded-full border px-3 py-1.5 text-xs"><Plus size={12} className="inline" /> 新建对话</button>
-          <button className="rounded-full border px-3 py-1.5 text-xs"><MessageCircle size={12} className="inline" /> 对话历史</button>
+          <button
+            onClick={() => startConversation(activeConversation.agentType)}
+            className="rounded-full border border-[#e5e7eb] px-3 py-1.5 text-xs text-[#374151] hover:bg-[#f9fafb]"
+          >
+            <Plus size={12} className="mr-1 inline" />
+            新建对话
+          </button>
+          <div className="relative">
+            <button
+              onClick={() => setHistoryOpen((v) => !v)}
+              className="rounded-full border border-[#e5e7eb] px-3 py-1.5 text-xs text-[#374151] hover:bg-[#f9fafb]"
+            >
+              <MessageCircle size={12} className="mr-1 inline" />
+              对话历史
+            </button>
+            <Dropdown open={historyOpen} onClose={() => setHistoryOpen(false)} className="absolute right-0 top-full z-30 mt-2 w-64">
+              <div className="rounded-[8px] border border-[#e5e7eb] bg-white p-2 shadow-xl">
+                {historyList.length === 0 && <div className="px-2 py-3 text-xs text-[#9ca3af]">暂无历史会话</div>}
+                {historyList.map((convo) => (
+                  <button
+                    key={convo.id}
+                    onClick={() => {
+                      goToConversation(convo.id)
+                      setHistoryOpen(false)
+                    }}
+                    className="mb-1 w-full rounded-md border border-transparent px-2 py-2 text-left hover:border-[#6C5CE7]/25 hover:bg-[#faf9ff]"
+                  >
+                    <div className="text-xs font-medium text-[#374151]">{convo.title || `${agentConfigs[convo.agentType].name}对话`}</div>
+                    <div className="mt-0.5 text-[11px] text-[#9ca3af]">
+                      {agentConfigs[convo.agentType].name} · {relativeTime(convo.createdAt)}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </Dropdown>
+          </div>
         </div>
       </div>
 
-      <div className="h-[460px] space-y-3 overflow-y-auto p-4 scrollbar-thin">
+      <div className="h-[500px] space-y-3 overflow-y-auto p-4 scrollbar-thin">
         {activeConversation.messages.map((m) => (
           <ChatMessageItem key={m.id} message={m} />
         ))}
@@ -1188,14 +1751,14 @@ function AIChatView() {
         <div ref={bottomRef} />
       </div>
 
-      <div className="border-t p-3">
+      <div className="border-t border-[#eceef3] p-3">
         <textarea
           ref={inputRef}
           data-chat-input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="继续描述你的创作需求..."
-          className="h-16 w-full resize-none rounded-lg border p-3 text-sm outline-none focus:border-[#6C5CE7]"
+          className="h-16 w-full resize-none rounded-lg border border-[#e5e7eb] p-3 text-sm outline-none focus:border-[#6C5CE7]"
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault()
@@ -1207,12 +1770,12 @@ function AIChatView() {
 
         <div className="mt-2 flex items-center justify-between">
           <div className="flex items-center gap-2 text-xs">
-            <span className="inline-flex items-center gap-1 rounded-full border px-2 py-1">
+            <span className="inline-flex items-center gap-1 rounded-full border border-[#e5e7eb] px-2 py-1">
               <span className="h-2 w-2 rounded-full" style={{ background: agent.color }} /> {agent.name}
             </span>
 
             <div className="relative">
-              <button className="rounded-full border px-3 py-1" onClick={() => setModelOpen((v) => !v)}>
+              <button className="rounded-full border border-[#e5e7eb] px-3 py-1" onClick={() => setModelOpen((v) => !v)}>
                 {selectedModel} <ChevronDown size={12} className="inline" />
               </button>
               <Dropdown open={modelOpen} onClose={() => setModelOpen(false)}>
@@ -1240,7 +1803,7 @@ function AIChatView() {
             </div>
 
             <div className="relative">
-              <button className="rounded-full border px-3 py-1" onClick={() => setSkillOpen((v) => !v)}>
+              <button className="rounded-full border border-[#e5e7eb] px-3 py-1" onClick={() => setSkillOpen((v) => !v)}>
                 技能{selectedSkills.length > 0 ? `(${selectedSkills.length})` : ''} <ChevronDown size={12} className="inline" />
               </button>
               <Dropdown open={skillOpen} onClose={() => setSkillOpen(false)}>
@@ -1267,7 +1830,7 @@ function AIChatView() {
 
             {(activeConversation.agentType === 'gallery' || activeConversation.agentType === 'studio') && (
               <div className="relative">
-                <button className="rounded-full border px-3 py-1" onClick={() => setParamOpen((v) => !v)}>
+                <button className="rounded-full border border-[#e5e7eb] px-3 py-1" onClick={() => setParamOpen((v) => !v)}>
                   参数设置 <ChevronDown size={12} className="inline" />
                 </button>
                 <Dropdown open={paramOpen} onClose={() => setParamOpen(false)}>
@@ -1296,7 +1859,7 @@ function AIChatView() {
               </div>
             )}
 
-            <button className="rounded-full border p-1.5">
+            <button className="rounded-full border border-[#e5e7eb] p-1.5">
               <Paperclip size={13} />
             </button>
           </div>
@@ -1346,7 +1909,7 @@ function TaskPanel() {
           >
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-lg font-semibold">创作任务</h3>
-              <button onClick={() => toggleTaskPanel(false)} className="rounded-md border p-1.5">
+              <button onClick={() => toggleTaskPanel(false)} className="rounded-md border border-[#e5e7eb] p-1.5">
                 <X size={14} />
               </button>
             </div>
@@ -1359,24 +1922,32 @@ function TaskPanel() {
                     <button
                       key={task.id}
                       onClick={() => goToConversation(task.conversationId)}
-                      className="w-full rounded-xl border p-3 text-left hover:border-[#6C5CE7]/40"
+                      className="group w-full rounded-xl border border-[#eceef3] p-3 text-left hover:border-[#6C5CE7]/40"
                     >
-                      <div className="mb-1 flex items-center justify-between">
-                        <span className="inline-flex items-center gap-1 text-xs text-gray-500">
-                          <span className="h-2 w-2 rounded-full" style={{ background: agentConfigs[task.agentType].color }} />
+                      <div className="mb-1 flex items-start justify-between">
+                        <span className="inline-flex items-center gap-2 text-xs text-gray-500">
+                          <span
+                            className="inline-flex h-5 w-5 items-center justify-center rounded-md text-white"
+                            style={{ background: agentConfigs[task.agentType].color }}
+                          >
+                            {agentConfigs[task.agentType].icon}
+                          </span>
                           {agentConfigs[task.agentType].name}
                         </span>
                         <span className="text-[11px] text-gray-400">{relativeTime(task.createdAt)}</span>
                       </div>
                       <div className="text-sm font-medium">{task.title}</div>
-                      <div className="mt-1 text-[11px] text-gray-500">{task.model}</div>
+                      <div className="mt-1 text-[11px] text-gray-500">{agentConfigs[task.agentType].name} · {task.model}</div>
                       <div className="mt-2 h-2 rounded-full bg-gray-100">
                         <div
                           className="h-2 rounded-full bg-gradient-to-r from-[#6366F1] to-[#8B5CF6]"
                           style={{ width: `${task.progress}%` }}
                         />
                       </div>
-                      <div className="mt-1 text-right text-[11px] text-[#6C5CE7]">{task.progress}%</div>
+                      <div className="mt-1 flex items-center justify-between">
+                        <span className="text-[11px] text-[#9ca3af] opacity-0 transition-opacity group-hover:opacity-100">点击回到对话</span>
+                        <span className="text-[11px] text-[#6C5CE7]">{task.progress}%</span>
+                      </div>
                     </button>
                   ))}
                 </div>
@@ -1389,14 +1960,26 @@ function TaskPanel() {
                     <button
                       key={task.id}
                       onClick={() => goToConversation(task.conversationId)}
-                      className="w-full rounded-xl border p-3 text-left hover:border-[#6C5CE7]/40"
+                      className="group w-full rounded-xl border border-[#eceef3] p-3 text-left hover:border-[#6C5CE7]/40"
                     >
                       <div className="mb-1 flex items-center justify-between text-xs text-gray-500">
-                        <span>{agentConfigs[task.agentType].name}</span>
+                        <span className="inline-flex items-center gap-1">
+                          <span
+                            className="inline-flex h-5 w-5 items-center justify-center rounded-md text-white"
+                            style={{ background: agentConfigs[task.agentType].color }}
+                          >
+                            {agentConfigs[task.agentType].icon}
+                          </span>
+                          {agentConfigs[task.agentType].name}
+                        </span>
                         <span>{relativeTime(task.createdAt)}</span>
                       </div>
                       <div className="text-sm font-medium">{task.title}</div>
-                      <div className="mt-2 inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] text-emerald-600">已完成</div>
+                      <div className="mt-1 text-[11px] text-gray-500">{agentConfigs[task.agentType].name} · {task.model}</div>
+                      <div className="mt-2 flex items-center justify-between">
+                        <span className="text-[11px] text-[#9ca3af] opacity-0 transition-opacity group-hover:opacity-100">点击回到对话</span>
+                        <span className="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] text-emerald-600">已完成</span>
+                      </div>
                     </button>
                   ))}
                 </div>
@@ -1413,14 +1996,17 @@ function CenterColumn() {
   const { isAICreationMode, enterAICreation, exitAICreation, currentAIView } = useApp()
   return (
     <section>
-      <div className="mb-3 rounded-xl border bg-white p-3">
-        <div className="mb-3 flex items-center gap-8 border-b text-sm">
-          <button onClick={exitAICreation} className={`relative pb-3 font-medium ${!isAICreationMode ? 'text-[#ff8200]' : 'text-gray-500'}`}>
+      <div className="mb-2 rounded-[4px] border border-[#e6e6e6] bg-white p-3">
+        <div className="mb-3 flex items-center gap-8 border-b border-[#eceef3] text-sm">
+          <button onClick={exitAICreation} className={`relative pb-3 font-medium ${!isAICreationMode ? 'text-[#ff8200]' : 'text-[#6b7280]'}`}>
             发微博
             {!isAICreationMode && <span className="absolute -bottom-px left-0 h-0.5 w-full bg-[#ff8200]" />}
           </button>
-          <button onClick={() => enterAICreation('home')} className={`relative inline-flex items-center gap-1 pb-3 font-medium ${isAICreationMode ? 'text-[#6C5CE7]' : 'text-gray-500'}`}>
-            <Sparkles size={13} /> 千问AI创作
+          <button
+            onClick={() => enterAICreation('home')}
+            className={`relative inline-flex items-center gap-1 pb-3 font-medium ${isAICreationMode ? 'text-[#6C5CE7]' : 'text-[#6b7280]'}`}
+          >
+            <QwenMark /> 千问AI创作
             {isAICreationMode && <span className="absolute -bottom-px left-0 h-0.5 w-full bg-[#6C5CE7]" />}
           </button>
         </div>
@@ -1439,9 +2025,9 @@ function CenterColumn() {
 
 function Layout() {
   return (
-    <div className="min-h-screen bg-[#f7f8fa]">
+    <div className="min-h-screen bg-[#f2f2f5]">
       <TopNav />
-      <main className="mx-auto grid w-full max-w-[1280px] grid-cols-[220px_minmax(0,1fr)_320px] gap-4 px-4 py-4">
+      <main className="mx-auto grid w-full max-w-[1180px] grid-cols-[160px_minmax(0,1fr)_300px] gap-4 px-2 py-3">
         <LeftSidebar />
         <CenterColumn />
         <RightSidebar />
